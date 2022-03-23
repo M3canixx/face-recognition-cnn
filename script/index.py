@@ -24,8 +24,8 @@ import treatPictures
 import define_names
 import reorganize
 import checkpath
+# import preprocess_input
 
-nameToAdd = ""
 person_id_make_data = 0
 data_path = "../data/"
 brut_path = "../data/brut/"
@@ -245,7 +245,7 @@ class MainWindow(QMainWindow): #Fenetre principale
                         frame = cv2.resize(frame, (224, 224))
                         frame = np.asarray(frame, dtype=np.float64)
                         frame = np.expand_dims(frame, axis=0)
-                        # frame = preprocess_input(frame)
+                        # frame = preprocess_input.main(frame)
                         
                         name = "Unknown"
                         list_of_person = os.listdir(brut_path)
