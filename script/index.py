@@ -219,7 +219,7 @@ class MainWindow(QMainWindow): #Fenetre principale
             
             face_detector = dlib.get_frontal_face_detector()
 
-            if os.path.exists("cnn_model"):
+            if os.path.exists(data_path + "cnn_model"):
                 cnn_model = keras.models.load_model(data_path + 'cnn_model')
                 check_model = True
             else :
