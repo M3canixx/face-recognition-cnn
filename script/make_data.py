@@ -28,5 +28,5 @@ def main(folder_path, person_id_make_data, name, data): #Crée le dataframe
     person_id_make_data += 1
     dataframe = dataframe.astype({'person_id': 'int32'})
     dataframe = dataframe.astype({'img_id': 'int32'})
-    dataframe.to_csv("../data/df_faces.csv", index=False, header=True)
+    dataframe.to_csv("data/df_faces.csv", index=False, header=True)
     return dataframe, person_id_make_data

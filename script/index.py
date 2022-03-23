@@ -27,9 +27,9 @@ import checkpath
 # import preprocess_input
 
 person_id_make_data = 0
-data_path = "../data/"
-brut_path = "../data/brut/"
-resize_path = "../data/resize/"
+data_path = "data/"
+brut_path = "data/brut/"
+resize_path = "data/resize/"
 
 checkpath.main(data_path)
 checkpath.main(brut_path)
