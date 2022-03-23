@@ -67,9 +67,11 @@ class MainWindow(QMainWindow): #Fenetre principale
             cnn_model, learning_rate_reduction= resnet_model_tf.main((224, 224, 3), len(os.listdir(resize_path)))
             cnn_model.fit(X, y, epochs=3, verbose=1, callbacks=[learning_rate_reduction])
             cnn_model.save(data_path + "cnn_model")
+            self.popup = QMessageBox(QMessageBox.Information,'Message',"Fitting done !\n")
+            self.popup.exec()
         else :
             self.popup = QMessageBox(QMessageBox.Information,'Message',"Cannot fit")
-            self.popup.show()
+            self.popup.exec()
     
     def initUI(self):
         self.setWindowTitle('Camera')
@@ -291,7 +293,7 @@ class MainWindow(QMainWindow): #Fenetre principale
             name = self.nameZone.toPlainText()
             if name == "":
                 self.popup = QMessageBox(QMessageBox.Information,'Message','Please enter your name first.')
-                self.popup.show()
+                self.popup.exec()
             else:
                 self.nameZone.setText("")
                 folders = os.listdir("./")
@@ -330,16 +332,18 @@ class MainWindow(QMainWindow): #Fenetre principale
                         pixmap = QPixmap(qimage)
                         pixmap = pixmap.scaled(960,640, Qt.KeepAspectRatio)
                         self.screen.setPixmap(pixmap)
+
                         
                     
                     message = treatPictures.main(name, brut_path, resize_path)
-                    
-                    # self.popup = QMessageBox(QMessageBox.Information,'Message',"Pictures taken!\n" + message)
-                    # self.popup.show()
+
+                    self.popup = QMessageBox(QMessageBox.Information,'Message',"Pictures taken!\n" + message + "\n Now fitting ...")
+                    self.popup.exec()
+
                     self.fit_model(df_faces,person_id_make_data)
                 else:
                     self.popup = QMessageBox(QMessageBox.Information,'Message','Please delete the existing folder.')
-                    self.popup.show()
+                    self.popup.exec()
 
         else:
             pass
