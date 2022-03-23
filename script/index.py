@@ -58,7 +58,7 @@ class MainWindow(QMainWindow): #Fenetre principale
         name = os.listdir(resize_path)
         if (len(name) != 0):
             for e in name :
-                df_faces, person_id_make_data, list_of_person = make_data.main(resize_path + e, person_id_make_data, e.split("_")[0], df_faces)
+                df_faces, person_id_make_data = make_data.main(resize_path + e, person_id_make_data, e.split("_")[0], df_faces)
             X, y = get_data.main(df_faces)
 
             gray_images = False # Mettre True pour avoir les images en niveau de gris, False pour RGB
@@ -248,6 +248,7 @@ class MainWindow(QMainWindow): #Fenetre principale
                         # frame = preprocess_input(frame)
                         
                         name = "Unknown"
+                        list_of_person = os.listdir(brut_path)
                         if (check_model):
                             prediction = cnn_model.predict(frame)
                             
