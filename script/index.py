@@ -222,7 +222,7 @@ class MainWindow(QMainWindow): #Fenetre principale
             
             face_detector = dlib.get_frontal_face_detector()
             
-            persons = define_names()
+            persons = define_names.main(brut_path)
             persons_number = len(persons)
             
             if persons_number >= 0:
