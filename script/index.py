@@ -336,8 +336,14 @@ class MainWindow(QMainWindow): #Fenetre principale
                         deltaNeeded = total*0.15
                         deltaActual = actualTime - timeBase
                         if deltaActual >= deltaNeeded:
-                            cv2.imwrite(os.path.join(data_path, name + '/' + name + ' ' + str(total) + '.jpg') , frameCatch)
+                            frame = frameCatch
+                            if total < 10:
+                                frame = increase_brightness(frameCatch, total * 10)
+                            if total >=10 and total < 20:
+                                frame = cv2.blur(frame, (5, 5)) 
+                            cv2.imwrite(os.path.join(brut_path, name + '/' + name + ' ' + str(total) + '.jpg') , frame)
                             total += 1
+
                         frameCatch = cv2.cvtColor(frameCatch, cv2.COLOR_BGR2RGB)
                         frameOut = cv2.putText(frameCatch, percentage, org, font, fontScale, color, thickness, cv2.LINE_AA)
                         self.set_screen(frameOut)
