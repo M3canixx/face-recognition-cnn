@@ -16,7 +16,7 @@ def main(name, brut_path, resize_path):
         image_real_number = image_file_name.split(' ')[-1].split('.')[0] #On recupere le numero de l'image à partir du nom du fichier.
         image_path = pathToFolder + '/' + image_file_name
         image = plt.imread(image_path)
-        cropped_face = getCroppedFace.main(image) #On récupère le visage sur la photo.
+        cropped_face = getCroppedFace(image) #On récupère le visage sur la photo.
         
         if type(cropped_face) != int: #Si un seul visage a été trouvé sur la photo.
             detected_faces += 1

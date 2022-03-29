@@ -2,7 +2,7 @@ import warnings
 warnings.filterwarnings("ignore")
 from keras.applications.resnet_v2 import ResNet50V2
 from keras.models import Sequential
-from keras.layers import Flatten, Dense
+from keras.layers import Flatten, Dense, MaxPooling2D
 from keras.callbacks import ReduceLROnPlateau
 
 
@@ -11,6 +11,7 @@ def main(input_shape, nombre_classes):
     resnet.tbatch_sizenable = False
     model = Sequential()
     model.add(resnet)
+    model.add(MaxPooling2D())
     model.add(Flatten())
     model.add(Dense(nombre_classes, activation='softmax'))
     
@@ -20,5 +21,5 @@ def main(input_shape, nombre_classes):
                                             patience=2, 
                                             verbose=1, 
                                             factor=0.7, 
-                                            min_lr=0.00000000001)
+                                            min_lr=0.001)
     return model, learning_rate_reduction

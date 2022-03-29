@@ -24,6 +24,8 @@ import treatPictures
 import define_names
 import reorganize
 import checkpath
+import loadModel
+import get_highest_probability
 # import preprocess_input
 
 person_id_make_data = 0
@@ -212,7 +214,6 @@ class MainWindow(QMainWindow): #Fenetre principale
             self.screen.setStyleSheet('background-color: grey')
             self.camButton.setStyleSheet('background-color: darkred')
             self.camButton.setText("Deactivate Camera")
-            #self.takePicButton.setStyleSheet('background-color: forestgreen')
             self.explore.setVisible(False)
             self.takePicButton.setVisible(True)
             self.nameZone.setVisible(True)
@@ -220,65 +221,81 @@ class MainWindow(QMainWindow): #Fenetre principale
             self.cap = cv2.VideoCapture(0) ###
             
             face_detector = dlib.get_frontal_face_detector()
-
-            if os.path.exists(data_path + "cnn_model"):
-                cnn_model = keras.models.load_model(data_path + 'cnn_model')
-                check_model = True
-            else :
-                cnn_model = Sequential()
-                check_model = False
-
+            
+            persons = define_names()
+            persons_number = len(persons)
+            
+            if persons_number >= 0:
+                
+                if True:
+                    loading_image = plt.imread(data_path + 'loading_screen.jpg')
+                    self.set_screen(loading_image)
+                
+                model = loadModel.main("resnet50_TL", data_path)
+                                
+                self.model_loaded = True
+                            
             while self.camActivated == True:
-                ret, cv_img = self.cap.read()
-
+                
+                timeZero = time.time()
+                
+                ret, frame = self.cap.read()
+                
                 ##################################################### PARTIE DETECTION DE VISAGE
                 
-                gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
-
-                face_detector = dlib.get_frontal_face_detector()
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                
                 faces = face_detector(gray, 0)
-
                 for face in faces:
                     face_bounding_box = face_utils.rect_to_bb(face)
                     if all(i >= 0 for i in face_bounding_box):
                         [x, y, w, h] = face_bounding_box
-                        frame = cv_img[y:y + h, x:x + w]
-                        cv2.rectangle(cv_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                        frame = cv2.resize(frame, (224, 224))
-                        frame = np.asarray(frame, dtype=np.float64)
-                        frame = np.expand_dims(frame, axis=0)
-                        # frame = preprocess_input.main(frame)
+                        frame_face = frame[y:y + h, x:x + w]
+                        frame_face = frame_face/255.
+                        frame_face = cv2.resize(frame_face, (224, 224))
+                        frame_face = np.asarray(frame_face, dtype=np.float64)
+                        frame_face = np.expand_dims(frame_face, axis=0)
                         
-                        name = "Unknown"
-                        list_of_person = os.listdir(brut_path)
-                        if (check_model):
-                            prediction = cnn_model.predict(frame)
-                            
-                            max_value = max(prediction[0])
-
-                            index = prediction[0].tolist().index(max_value)
-
-                            print(max_value)
-                            if (max_value > 0.7):
-                                name = list_of_person[index]
-                            
+                        
+                        
+                        #################################################### PARTIE PREDICTION
+                        
+                        if self.model_loaded:
+                            prediction = model.predict(frame_face)[0]
+                            id_pred = get_highest_probability.main(prediction)
+                            confidence = round(prediction[id_pred]*100, 1)
+                            if confidence >= 70:
+                                self.identification = persons[id_pred] + " (" + str(confidence) + "%)"
+                            else:
+                                self.identification = "Not identified"
+                        else:
+                            pass
+                        
+                        ####################################################
+                        
                         font_face = cv2.FONT_HERSHEY_SIMPLEX
-                        cv2.putText(cv_img, name, (x, y-5), font_face, 0.8, (0,0,255), 3)
-
-                ################################################################################
-                frame = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-                qimage = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
-                pixmap = QPixmap(qimage)
-                pixmap = pixmap.scaled(960,640, Qt.KeepAspectRatio)
-                self.screen.setPixmap(pixmap)
+                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        cv2.putText(frame, self.identification, (x, y-5), font_face, 0.8, (0,0,255), 2)
+                
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                timeOne = time.time()
+                deltaTime = timeOne - timeZero
+                FPS = round(1/deltaTime, 1)
+                
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                org = (480, 30)
+                fontScale = 0.8
+                color = (0, 0, 255)
+                thickness = 2
+                text = str(FPS) + " FPS"
+                
+                cv2.putText(frame, text, org, font, fontScale, color, thickness, cv2.LINE_AA)
+                self.set_screen(frame)
                 cv2.waitKey(1)
             self.cap.release()
         else:
             im_np = np.zeros((960,540,1))
-            qimage = QImage(im_np, im_np.shape[1], im_np.shape[0], QImage.Format_RGB888)
-            pixmap = QPixmap(qimage)    
-            pixmap = pixmap.scaled(640,400, Qt.KeepAspectRatio)
-            self.screen.setPixmap(pixmap)
+            self.set_screen(im_np)
             self.screen.setStyleSheet('background-color: black')
             self.camButton.setStyleSheet('background-color: darkgreen')
             #self.takePicButton.setStyleSheet('background-color: grey')
@@ -287,22 +304,23 @@ class MainWindow(QMainWindow): #Fenetre principale
             self.camButton.setText("Activate Camera")
             self.nameZone.setVisible(False)
             self.camActivated = False
-    
+
+
     def takePictures(self):
         if self.camActivated:
             name = self.nameZone.toPlainText()
             if name == "":
                 self.popup = QMessageBox(QMessageBox.Information,'Message','Please enter your name first.')
-                self.popup.exec()
+                self.popup.show()
             else:
                 self.nameZone.setText("")
                 folders = os.listdir("./")
                 if name not in folders:
-                    os.mkdir(brut_path + name)
+                    os.mkdir(data_path + name)
                     count = 0
                     total = 0
                     timeBase = time.time()
-                    while total < 20:
+                    while total < 50:
                         retCatch, frameCatch = self.cap.read()
                     
                         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -310,41 +328,32 @@ class MainWindow(QMainWindow): #Fenetre principale
                         fontScale = 0.8
                         color = (255, 0, 0)
                         thickness = 2
-                        percentage = str(total*5) + " %"
+                        percentage = str(total*2) + " %"
                     
                         cv2.waitKey(1)
                     
                         count += 1
                         actualTime = time.time()
-                        deltaNeeded = total*0.3
+                        deltaNeeded = total*0.15
                         deltaActual = actualTime - timeBase
                         if deltaActual >= deltaNeeded:
-                            frame = frameCatch
-                            if total < 5:
-                                frame = increase_brightness.main(frameCatch, total * 20)
-                            if total >=5 and total < 10:
-                                frame = cv2.blur(frame, (5, 5)) 
-                            cv2.imwrite(os.path.join(brut_path, name + '/' + name + ' ' + str(total) + '.jpg') , frame)
+                            cv2.imwrite(os.path.join(data_path, name + '/' + name + ' ' + str(total) + '.jpg') , frameCatch)
                             total += 1
                         frameCatch = cv2.cvtColor(frameCatch, cv2.COLOR_BGR2RGB)
                         frameOut = cv2.putText(frameCatch, percentage, org, font, fontScale, color, thickness, cv2.LINE_AA)
-                        qimage = QImage(frameOut, frameOut.shape[1], frameOut.shape[0], QImage.Format_RGB888)
-                        pixmap = QPixmap(qimage)
-                        pixmap = pixmap.scaled(960,640, Qt.KeepAspectRatio)
-                        self.screen.setPixmap(pixmap)
-
+                        self.set_screen(frameOut)
                         
+                        if total == 49:
+                            loading_image = plt.imread('./screens/loading_screen.jpg')
+                            self.set_screen(loading_image)
                     
-                    message = treatPictures.main(name, brut_path, resize_path)
-
-                    self.popup = QMessageBox(QMessageBox.Information,'Message',"Pictures taken!\n" + message + "\n Now fitting ...")
-                    self.popup.exec()
-
-                    self.fit_model(df_faces,person_id_make_data)
+                    message = treatPictures(name)
+                    
+                    self.popup = QMessageBox(QMessageBox.Information,'Message',"Pictures taken!\n" + message)
+                    self.popup.show()
                 else:
                     self.popup = QMessageBox(QMessageBox.Information,'Message','Please delete the existing folder.')
-                    self.popup.exec()
-
+                    self.popup.show()
         else:
             pass
     
@@ -361,12 +370,23 @@ class MainWindow(QMainWindow): #Fenetre principale
         
     def explore_print(self, filePath): #Affiche la photo à l'ecran selon son path.
         image = plt.imread(filePath)
-        qimage = QImage(image, image.shape[1], image.shape[0], QImage.Format_RGB888)
-        pixmap = QPixmap(qimage)
-        pixmap = pixmap.scaled(960,640, Qt.KeepAspectRatio)
+        name = filePath.split('/')[2]
+        files_faces = os.listdir(resize_path + name + "_FACES")
+        number = filePath.split('/')[-1].split(' ')[-1].split('.')[0]
+        file_face = name + "_face_" + number + ".jpg"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        org = (20, 70)
+        fontScale = 0.8
+        thickness = 2
+        if file_face in files_faces:
+            color = (0, 255, 0)
+            image = cv2.putText(image, "Face detected", org, font, fontScale, color, thickness, cv2.LINE_AA)
+        else:
+            color = (255, 0, 0)
+            image = cv2.putText(image, "Face not detected", org, font, fontScale, color, thickness, cv2.LINE_AA)
         fileName = filePath.split("/")[-1]
         self.file_name_zone.setText(fileName)
-        self.screen.setPixmap(pixmap)
+        self.set_screen(image)
         
     
     def left_exploring(self):
@@ -393,18 +413,20 @@ class MainWindow(QMainWindow): #Fenetre principale
         self.explore_list = reorganize.main(self.explore_list)
         self.explore_filepath = brut_path + self.name + "/" + self.explore_list[self.explore_index]
         self.explore_print(self.explore_filepath)
-        print("search")
     
     def quit_exploring(self):
         self.explore_widget.setVisible(False)
         self.camButton.setVisible(True)
         self.explore.setVisible(True)
         im_np = np.zeros((960,540,1))
-        qimage = QImage(im_np, im_np.shape[1], im_np.shape[0], QImage.Format_RGB888)
-        pixmap = QPixmap(qimage)
-        pixmap = pixmap.scaled(640,400, Qt.KeepAspectRatio)
-        self.screen.setPixmap(pixmap)
+        self.set_screen(im_np)
         self.screen.setStyleSheet('background-color: black')
+    
+    def set_screen(self, image):
+        qimage = QImage(image, image.shape[1], image.shape[0], QImage.Format_RGB888)
+        pixmap = QPixmap(qimage)
+        pixmap = pixmap.scaled(960,640, Qt.KeepAspectRatio)
+        self.screen.setPixmap(pixmap)
     
     def closeEvent(self, event): #Fonction qui se lance lors de la fermeture de la fenetre.
         if self.camActivated:
