@@ -298,7 +298,6 @@ class MainWindow(QMainWindow): #Fenetre principale
             self.set_screen(im_np)
             self.screen.setStyleSheet('background-color: black')
             self.camButton.setStyleSheet('background-color: darkgreen')
-            #self.takePicButton.setStyleSheet('background-color: grey')
             self.takePicButton.setVisible(False)
             self.explore.setVisible(True)
             self.camButton.setText("Activate Camera")
@@ -314,7 +313,7 @@ class MainWindow(QMainWindow): #Fenetre principale
                 self.popup.show()
             else:
                 self.nameZone.setText("")
-                folders = os.listdir("./")
+                folders = os.listdir(brut_path)
                 if name not in folders:
                     os.mkdir(data_path + name)
                     count = 0
